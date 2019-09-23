@@ -1,0 +1,50 @@
+version: '3'
+services:
+  salvemundi_nginx:
+    image: 'bitnami/nginx:latest'
+    container_name: salvemundi_nginx
+    depends_on:
+      - salvemundi_php
+      - pretix
+    ports:
+      - "80:8000"
+      - "443:8443"
+    volumes:
+      - ./etc/salvemundi_nginx:/opt/bitnami/nginx/conf/server_blocks:rw
+
+  salvemundi_php:
+    image: 'bitnami/php-fpm:7.3'
+    container_name: salvemundi_php
+    expose:
+      - 9000
+    volumes:
+      - ./website:/salvemundi
+
+  pretix_database:
+    image: postgres:9.6-alpine
+    container_name: pretix_database
+    ports:
+      - "5432:5432"
+    environment: 
+      - POSTGRES_USER=pretix
+      - POSTGRES_PASSWORD=pretixsamudb
+    volumes:
+      - ./pretix/database:/var/lib/postgresql/data:rw
+
+  pretix_redis:
+    image: redis:latest
+    container_name: pretix_redis
+    ports:
+      - "6379:6379"
+
+  pretix:
+    image: pretix/standalone:latest
+    container_name: pretix
+    depends_on:
+      - pretix_database
+      - pretix_redis
+    expose:
+      - 80
+    volumes:
+      - ./etc/pretix/pretix.cfg:/etc/pretix/pretix.cfg:ro
+
